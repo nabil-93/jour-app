@@ -21,7 +21,7 @@ export const FONT_MONO = '"Geist Mono", "JetBrains Mono", ui-monospace, monospac
 
 // ── Atome ────────────────────────────────────────────────────
 
-export function JourHeader({ date = 'Do. 23. April', greeting = 'Guten Morgen, Sara' }) {
+export function JourHeader({ date = 'Do. 23. April', greeting = 'Guten Morgen' }) {
   return (
     <div style={{ padding: '70px 22px 18px', fontFamily: FONT_BODY }}>
       <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.12em',
@@ -592,7 +592,7 @@ export function LockScreen({ showNotif = true }) {
               <div style={{ flex: 1 }}/>
               <div style={{ fontSize: 11, opacity: 0.6 }}>jetzt</div>
             </div>
-            <div style={{ fontSize: 15, fontWeight: 500 }}>Guten Morgen Sara — dein Tag wartet</div>
+            <div style={{ fontSize: 15, fontWeight: 500 }}>Guten Morgen — dein Tag wartet</div>
             <div style={{ fontSize: 14, opacity: 0.85, marginTop: 2, lineHeight: 1.35 }}>
               6 Ziele heute. Fangen wir mit einem Glas Wasser an?
             </div>
