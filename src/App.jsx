@@ -309,95 +309,122 @@ function InteractiveMeal({ state, setState }) {
 }
 
 function InteractiveSport({ state, setState }) {
-  const [sec, setSec] = React.useState(() => {
-    const raw = localStorage.getItem('jour-sport-sec');
-    return raw ? parseInt(raw, 10) : 0;
-  });
+  const [sec, setSec] = React.useState(0);
   const [running, setRunning] = React.useState(false);
+  const [sessionLogs, setSessionLogs] = React.useState([]);
+  const [exIdx, setExIdx] = React.useState(0);
+  const [reps, setReps] = React.useState(10);
+  const [weight, setWeight] = React.useState(60);
+
+  const exercises = [
+    'Bankdrücken', 'Kniebeugen', 'Kreuzheben', 
+    'Schulterdrücken', 'Klimmzüge', 'Rudern'
+  ];
+
   React.useEffect(() => {
     if (!running) return;
-    const id = setInterval(() => {
-      setSec(s => {
-        const n = s + 1;
-        try { localStorage.setItem('jour-sport-sec', String(n)); } catch {}
-        return n;
-      });
-    }, 1000);
+    const id = setInterval(() => setSec(s => s + 1), 1000);
     return () => clearInterval(id);
   }, [running]);
+
   const mm = String(Math.floor(sec / 60)).padStart(2, '0');
   const ss = String(sec % 60).padStart(2, '0');
-  const kcal = Math.round(sec * 0.12);
+  const kcal = Math.round(sec * 0.15);
+
+  const logSet = () => {
+    const newLog = { 
+      ex: exercises[exIdx], 
+      set: sessionLogs.filter(l => l.ex === exercises[exIdx]).length + 1,
+      reps, 
+      weight,
+      time: `${mm}:${ss}`
+    };
+    setSessionLogs([newLog, ...sessionLogs]);
+  };
 
   return (
     <div style={{ background: JOUR_COLORS.paper, minHeight: '100%', paddingBottom: 120 }}>
-      <div style={{ padding: '70px 22px 14px', fontFamily: FONT_BODY }}>
-        <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: JOUR_COLORS.sub,
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <span style={{ width: 6, height: 6, borderRadius: 3,
-            background: running ? JOUR_COLORS.coral : JOUR_COLORS.sub,
-            boxShadow: running ? `0 0 0 4px oklch(72% 0.15 40 / 0.25)` : 'none',
-          }} />
-          {running ? 'aktiv' : 'pause'}
-        </div>
-        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 34, lineHeight: 1, marginTop: 8,
-          color: JOUR_COLORS.ink, letterSpacing: '-0.01em' }}>Krafttraining</div>
-      </div>
-
+      <TagHeader greeting="Krafttraining" />
+      
       <div style={{ padding: '0 22px' }}>
-        <Card pad={22} style={{ textAlign: 'center', marginBottom: 12 }}>
-          <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.16em',
-            color: JOUR_COLORS.sub, textTransform: 'uppercase' }}>Dauer</div>
-          <div style={{
-            fontFamily: FONT_DISPLAY, fontSize: 68, lineHeight: 1,
-            color: JOUR_COLORS.ink, marginTop: 6, letterSpacing: '-0.02em',
-            fontVariantNumeric: 'tabular-nums',
-          }}>{mm}:{ss}</div>
+        <Card pad={22} style={{ textAlign: 'center', marginBottom: 16 }}>
+          <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.16em', color: JOUR_COLORS.sub, textTransform: 'uppercase' }}>Session Timer</div>
+          <div style={{ fontFamily: FONT_DISPLAY, fontSize: 68, lineHeight: 1, color: JOUR_COLORS.ink, marginTop: 6, fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
+          
           <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 10 }}>
-            <StatBlock label="♥ bpm" value={running ? 110 + Math.floor(Math.random() * 20) : '--'} color={JOUR_COLORS.coral} />
+            <StatBlock label="♥ bpm" value={running ? 115 + (sec % 30) : '--'} color={JOUR_COLORS.coral} />
             <StatBlock label="kcal" value={kcal} color={JOUR_COLORS.amber} />
-            <StatBlock label="Sätze" value={0} color={JOUR_COLORS.accent} />
+            <StatBlock label="Sätze" value={sessionLogs.length} color={JOUR_COLORS.accent} />
           </div>
+
           <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-            <button onClick={() => setRunning(r => !r)} style={{
+            <button onClick={() => setRunning(!running)} style={{
               flex: 1, padding: '14px 0', borderRadius: 14, border: 'none',
               background: running ? JOUR_COLORS.ink : JOUR_COLORS.accent, color: '#fff',
               fontFamily: FONT_BODY, fontSize: 15, fontWeight: 500, cursor: 'pointer',
-            }}>{running ? 'Pause' : 'Fortsetzen'}</button>
-            <button onClick={() => { setSec(0); setRunning(false); }} style={{
-              padding: '14px 18px', borderRadius: 14,
-              border: `1px solid ${JOUR_COLORS.line}`, background: 'transparent',
-              color: JOUR_COLORS.ink, fontFamily: FONT_BODY, fontSize: 15, cursor: 'pointer',
+            }}>{running ? 'Pause' : (sec === 0 ? 'Start Training' : 'Fortsetzen')}</button>
+            <button onClick={() => { setSec(0); setRunning(false); setSessionLogs([]); }} style={{
+              padding: '14px 18px', borderRadius: 14, border: `1px solid ${JOUR_COLORS.line}`,
+              background: 'transparent', color: JOUR_COLORS.ink, fontFamily: FONT_BODY, fontSize: 15, cursor: 'pointer',
             }}>Reset</button>
           </div>
         </Card>
 
         <SectionLabel>Aktuelle Übung</SectionLabel>
-        <Card pad={16}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              width: 42, height: 42, borderRadius: 14, background: JOUR_COLORS.accentSoft,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <rect x="1" y="8" width="2" height="4" rx="1" fill={JOUR_COLORS.accent}/>
-                <rect x="4" y="6" width="2" height="8" rx="1" fill={JOUR_COLORS.accent}/>
-                <rect x="7" y="9" width="6" height="2" rx="0.5" fill={JOUR_COLORS.accent}/>
-                <rect x="14" y="6" width="2" height="8" rx="1" fill={JOUR_COLORS.accent}/>
-                <rect x="17" y="8" width="2" height="4" rx="1" fill={JOUR_COLORS.accent}/>
-              </svg>
+        <Card pad={18} style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <button onClick={() => setExIdx((exIdx - 1 + exercises.length) % exercises.length)} style={{ background: JOUR_COLORS.line, border: 'none', padding: 8, borderRadius: 10, cursor: 'pointer' }}>←</button>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: FONT_DISPLAY, fontSize: 20, color: JOUR_COLORS.ink }}>{exercises[exIdx]}</div>
+              <div style={{ fontFamily: FONT_BODY, fontSize: 12, color: JOUR_COLORS.sub }}>Übung {exIdx + 1} von {exercises.length}</div>
             </div>
-            <div style={{ flex: 1, fontFamily: FONT_BODY }}>
-              <div style={{ fontSize: 16, color: JOUR_COLORS.ink }}>Nächste Übung</div>
-              <div style={{ fontSize: 12, color: JOUR_COLORS.sub, marginTop: 2 }}>
-                Bereit für den ersten Satz
+            <button onClick={() => setExIdx((exIdx + 1) % exercises.length)} style={{ background: JOUR_COLORS.line, border: 'none', padding: 8, borderRadius: 10, cursor: 'pointer' }}>→</button>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, marginBottom: 18 }}>
+            <div style={{ flex: 1, background: JOUR_COLORS.card, padding: 12, borderRadius: 16, border: `1px solid ${JOUR_COLORS.line}`, textAlign: 'center' }}>
+              <div style={{ fontSize: 10, color: JOUR_COLORS.sub, textTransform: 'uppercase', marginBottom: 4 }}>Wdh.</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                <button onClick={() => setReps(r => Math.max(1, r-1))} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>-</button>
+                <div style={{ fontSize: 22, fontFamily: FONT_DISPLAY, color: JOUR_COLORS.ink }}>{reps}</div>
+                <button onClick={() => setReps(r => r+1)} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>+</button>
               </div>
             </div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 28, color: JOUR_COLORS.ink }}>0</div>
+            <div style={{ flex: 1, background: JOUR_COLORS.card, padding: 12, borderRadius: 16, border: `1px solid ${JOUR_COLORS.line}`, textAlign: 'center' }}>
+              <div style={{ fontSize: 10, color: JOUR_COLORS.sub, textTransform: 'uppercase', marginBottom: 4 }}>Gewicht (kg)</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                <button onClick={() => setWeight(w => Math.max(0, w-2.5))} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>-</button>
+                <div style={{ fontSize: 22, fontFamily: FONT_DISPLAY, color: JOUR_COLORS.ink }}>{weight}</div>
+                <button onClick={() => setWeight(w => w+2.5)} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>+</button>
+              </div>
+            </div>
           </div>
+
+          <button onClick={logSet} style={{
+            width: '100%', padding: '14px 0', borderRadius: 14, border: 'none',
+            background: JOUR_COLORS.ink, color: '#fff', fontFamily: FONT_BODY,
+            fontSize: 15, fontWeight: 500, cursor: 'pointer'
+          }}>Satz Loggen</button>
         </Card>
+
+        {sessionLogs.length > 0 && (
+          <>
+            <SectionLabel>Verlauf (Heute)</SectionLabel>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {sessionLogs.map((log, i) => (
+                <Card key={i} pad={14}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: 14, color: JOUR_COLORS.ink, fontWeight: 600 }}>{log.ex}</div>
+                      <div style={{ fontSize: 12, color: JOUR_COLORS.sub }}>Satz {log.set} · {log.reps} Wdh. · {log.weight} kg</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: JOUR_COLORS.sub, fontFamily: FONT_MONO }}>{log.time}</div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
