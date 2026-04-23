@@ -61,7 +61,7 @@ const NAV_ITEMS = [
   { id: 'sport',    label: 'Sport',       icon: 'sport' },
   { id: 'journal',  label: 'Journal',     icon: 'journal' },
   { id: 'diagnostic', label: 'Score',     icon: 'score' },
-  { id: 'dashboard', label: 'Progrès',    icon: 'chart' },
+  { id: 'dashboard', label: 'Fortschritt', icon: 'chart' },
 ];
 
 function NavIcon({ name, color }) {
