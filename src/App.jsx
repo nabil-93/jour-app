@@ -694,6 +694,22 @@ function InstallPrompt() {
 }
 
 function PhoneApp({ initial = 'home', label }) {
+  // Force refresh on new PWA version
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              window.location.reload();
+            }
+          });
+        });
+      });
+    }
+  }, []);
+
   const [state, setState] = React.useState(loadState);
   const [screen, setScreen] = React.useState(initial);
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 500);
