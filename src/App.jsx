@@ -5,7 +5,7 @@ import {
 } from './screens';
 import { IOSDevice } from './ios-frame';
 
-const LS_KEY = 'tag-app-state-v1';
+const LS_KEY = 'tag-app-v3';
 
 const DEFAULT_STATE = {
   userName: '',
@@ -616,6 +616,9 @@ function InteractiveDashboard({ state }) {
               Deine Morgeneinheiten geben dir + 22 % Score.
             </div>
           </Card>
+          <div style={{ textAlign: 'center', marginTop: 12, fontSize: 10, color: JOUR_COLORS.sub, opacity: 0.5 }}>
+            Version 2.1 — Refreshed
+          </div>
         </div>
       </div>
     </div>
