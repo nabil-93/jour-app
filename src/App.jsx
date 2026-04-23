@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   JOUR_COLORS, FONT_DISPLAY, FONT_BODY, FONT_MONO,
-  TagHeader, Card, SectionLabel, Ring, Check, Pill, StatBlock
+  TagHeader, Card, SectionLabel, Ring, Check, Pill, StatBlock, DashboardScreen
 } from './screens';
 import { IOSDevice } from './ios-frame';
 
@@ -602,7 +602,7 @@ function InteractiveDashboard({ state }) {
           weekLabel={weekLabel}
         />
         <div style={{ textAlign: 'center', marginTop: 12, fontSize: 10, color: JOUR_COLORS.sub, opacity: 0.5 }}>
-          Version 2.5 — Final
+          Version 2.6 — Fixed
         </div>
       </div>
     </div>
