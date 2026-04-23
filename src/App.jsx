@@ -623,6 +623,38 @@ function InteractiveDashboard({ state }) {
 
 // ─── Phone shell with routing ──────────────────────────────────────────────
 
+function InstallPrompt() {
+  const [show, setShow] = React.useState(false);
+  React.useEffect(() => {
+    // Detect if already installed
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (!isStandalone && window.innerWidth < 500) {
+      setShow(true);
+    }
+  }, []);
+
+  if (!show) return null;
+
+  return (
+    <div style={{
+      position: 'fixed', top: 12, left: 12, right: 12, zIndex: 9999,
+      background: 'rgba(26,24,21,0.95)', color: '#f5f1ea',
+      padding: '12px 16px', borderRadius: 16, fontSize: 13,
+      display: 'flex', alignItems: 'center', gap: 12,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+      backdropFilter: 'blur(8px)',
+      fontFamily: FONT_BODY,
+    }}>
+      <div style={{ flex: 1 }}>
+        <b>App installieren:</b> Klick auf <span style={{ color: JOUR_COLORS.accent }}>Teilen</span> und dann auf <span style={{ color: JOUR_COLORS.accent }}>„Zum Home-Bildschirm“</span>
+      </div>
+      <button onClick={() => setShow(false)} style={{
+        background: 'none', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer'
+      }}>×</button>
+    </div>
+  );
+}
+
 function PhoneApp({ initial = 'home', label }) {
   const [state, setState] = React.useState(loadState);
   const [screen, setScreen] = React.useState(initial);
@@ -687,6 +719,7 @@ function PhoneApp({ initial = 'home', label }) {
 
   return (
     <div style={{ position: 'relative' }} data-screen-label={label || screen}>
+      <InstallPrompt />
       <IOSDevice width={390} height={844}>
         {appContent}
       </IOSDevice>
@@ -703,6 +736,7 @@ export default function App() {
       justifyContent: 'center',
       background: 'radial-gradient(ellipse 100% 60% at 50% -10%, oklch(94% 0.02 70), oklch(88% 0.015 60) 60%, oklch(82% 0.015 50) 100%)'
     }}>
+      <InstallPrompt />
       <PhoneApp />
     </div>
   );
