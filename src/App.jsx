@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   JOUR_COLORS, FONT_DISPLAY, FONT_BODY, FONT_MONO,
-  JourHeader, Card, SectionLabel, Ring, Check, Pill, StatBlock
+  TagHeader, Card, SectionLabel, Ring, Check, Pill, StatBlock
 } from './screens';
 import { IOSDevice } from './ios-frame';
 
