@@ -1,16 +1,31 @@
-# React + Vite
+# Jour — Ta journée, notée
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Ein minimalistischer Sport- und Wellness-Tracker mit Fokus auf Ästhetik und einfacher Bedienung.
 
-Currently, two official plugins are available:
+## 🌟 Features
+- **Daily Checklist:** Verwalte deine täglichen Ziele.
+- **Meal Tracking:** Logge deine Mahlzeiten mit Kalorienangaben.
+- **Workout Mode:** Aktive Zeiterfassung für deine Trainingseinheiten.
+- **Journaling:** Halte deine Gedanken und deine Stimmung fest.
+- **Diagnostic Score:** Erhalte eine tägliche Bewertung deiner Leistung.
+- **Progress Dashboard:** Verfolge deinen Fortschritt über die Woche.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 📱 PWA (Progressive Web App)
+Dieses Projekt ist als PWA konfiguriert. Das bedeutet:
+- **Add to Home Screen:** Du kannst die App direkt auf deinem Smartphone installieren.
+- **Offline-Support:** Die App funktioniert auch ohne Internetverbindung (nach dem ersten Laden).
+- **Mobile-First:** Optimiert für die Nutzung als mobile Anwendung.
 
-## React Compiler
+## 🚀 Installation & Start
+1. Repository klonen
+2. `npm install`
+3. `npm run dev`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠 Tech Stack
+- React
+- Vite
+- Vite PWA Plugin
+- Custom CSS (Liquid Glass Design)
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+Erstellt von Antigravity für Nabil.
