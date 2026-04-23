@@ -478,14 +478,22 @@ export function DiagnosticScreen({ progress = 0.83, label = '83', verdict = 'Sch
 
 // ── 6) Fortschritt ────────────────────────────────────────
 
-export function DashboardScreen({ week = [62, 74, 55, 81, 90, 70, 83], avg = 74, streak = 12 }) {
+export function DashboardScreen({ 
+  week = [0, 0, 0, 0, 0, 0, 0], 
+  avg = 0, 
+  streak = 0,
+  bestDay = 'Noch keine Daten',
+  bestDayLabel = 'Starte heute',
+  insight = 'Erfasse deine Gewohnheiten, um Trends zu sehen.',
+  weekLabel = 'Diese Woche'
+}) {
   const max = 100;
   const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
   return (
     <div style={{ background: JOUR_COLORS.paper, minHeight: '100%', paddingBottom: 80 }}>
       <div style={{ padding: '70px 22px 10px', fontFamily: FONT_BODY }}>
         <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: JOUR_COLORS.sub }}>Woche 16 · April</div>
+          textTransform: 'uppercase', color: JOUR_COLORS.sub }}>{weekLabel}</div>
         <div style={{ fontFamily: FONT_DISPLAY, fontSize: 34, lineHeight: 1, marginTop: 8,
           color: JOUR_COLORS.ink, letterSpacing: '-0.01em' }}>Dein Fortschritt</div>
       </div>
@@ -498,7 +506,7 @@ export function DashboardScreen({ week = [62, 74, 55, 81, 90, 70, 83], avg = 74,
               Durchschnitt<br/>diese Woche
             </div>
             <div style={{ flex: 1 }}/>
-            <Pill color={JOUR_COLORS.accentSoft} text={JOUR_COLORS.accent}>+ 8 % vs. letzte Woche</Pill>
+            {avg > 0 && <Pill color={JOUR_COLORS.accentSoft} text={JOUR_COLORS.accent}>In Bewegung</Pill>}
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 140, padding: '0 4px' }}>
             {week.map((v, i) => (
@@ -506,13 +514,14 @@ export function DashboardScreen({ week = [62, 74, 55, 81, 90, 70, 83], avg = 74,
                 alignItems: 'center', gap: 6, height: '100%' }}>
                 <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
                   <div style={{
-                    width: '100%', height: `${(v / max) * 100}%`,
-                    background: i === week.length - 1 ? JOUR_COLORS.accent : 'oklch(66% 0.16 145 / 0.35)',
+                    width: '100%', height: `${Math.max(2, (v / max) * 100)}%`,
+                    background: i === (new Date().getDay() + 6) % 7 ? JOUR_COLORS.accent : 'oklch(66% 0.16 145 / 0.35)',
                     borderRadius: '6px 6px 2px 2px',
+                    opacity: v === 0 ? 0.2 : 1
                   }}/>
                 </div>
                 <div style={{ fontFamily: FONT_MONO, fontSize: 10,
-                  color: i === week.length - 1 ? JOUR_COLORS.ink : JOUR_COLORS.sub }}>
+                  color: i === (new Date().getDay() + 6) % 7 ? JOUR_COLORS.ink : JOUR_COLORS.sub }}>
                   {days[i]}
                 </div>
               </div>
@@ -531,27 +540,27 @@ export function DashboardScreen({ week = [62, 74, 55, 81, 90, 70, 83], avg = 74,
             <div style={{ display: 'flex', gap: 3, marginTop: 10 }}>
               {Array.from({length: 12}).map((_, i) => (
                 <div key={i} style={{ flex: 1, height: 14, borderRadius: 3,
-                  background: JOUR_COLORS.accent, opacity: 0.35 + (i / 11) * 0.65 }}/>
+                  background: JOUR_COLORS.accent, opacity: streak > i ? 1 : 0.15 }}/>
               ))}
             </div>
           </Card>
           <Card pad={16}>
             <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.14em',
               color: JOUR_COLORS.sub, textTransform: 'uppercase' }}>Bester Tag</div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 28, color: JOUR_COLORS.ink,
-              marginTop: 6, letterSpacing: '-0.01em' }}>Freitag</div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 24, color: JOUR_COLORS.ink,
+              marginTop: 6, letterSpacing: '-0.01em' }}>{bestDay}</div>
             <div style={{ fontFamily: FONT_BODY, fontSize: 12, color: JOUR_COLORS.sub, marginTop: 4 }}>
-              Alles erreicht · 90 / 100
+              {bestDayLabel}
             </div>
           </Card>
         </div>
         <div style={{ marginTop: 12 }}>
           <Card pad={16}>
             <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.14em',
-              color: JOUR_COLORS.sub, textTransform: 'uppercase' }}>Was wir bemerkt haben</div>
+              color: JOUR_COLORS.sub, textTransform: 'uppercase' }}>Insights</div>
             <div style={{ fontFamily: FONT_DISPLAY, fontSize: 18, lineHeight: 1.3,
               color: JOUR_COLORS.ink, marginTop: 8, letterSpacing: '-0.005em' }}>
-              Deine Morgeneinheiten geben dir + 22 % Score.
+              {insight}
             </div>
           </Card>
         </div>

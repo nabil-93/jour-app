@@ -311,7 +311,7 @@ function InteractiveMeal({ state, setState }) {
 function InteractiveSport({ state, setState }) {
   const [sec, setSec] = React.useState(() => {
     const raw = localStorage.getItem('jour-sport-sec');
-    return raw ? parseInt(raw, 10) : 24 * 60 + 18;
+    return raw ? parseInt(raw, 10) : 0;
   });
   const [running, setRunning] = React.useState(false);
   React.useEffect(() => {
@@ -327,7 +327,7 @@ function InteractiveSport({ state, setState }) {
   }, [running]);
   const mm = String(Math.floor(sec / 60)).padStart(2, '0');
   const ss = String(sec % 60).padStart(2, '0');
-  const kcal = Math.round(sec * 0.2 + 180);
+  const kcal = Math.round(sec * 0.12);
 
   return (
     <div style={{ background: JOUR_COLORS.paper, minHeight: '100%', paddingBottom: 120 }}>
@@ -356,9 +356,9 @@ function InteractiveSport({ state, setState }) {
             fontVariantNumeric: 'tabular-nums',
           }}>{mm}:{ss}</div>
           <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 10 }}>
-            <StatBlock label="♥ bpm" value={142} color={JOUR_COLORS.coral} />
+            <StatBlock label="♥ bpm" value={running ? 110 + Math.floor(Math.random() * 20) : '--'} color={JOUR_COLORS.coral} />
             <StatBlock label="kcal" value={kcal} color={JOUR_COLORS.amber} />
-            <StatBlock label="Sätze" value={3} color={JOUR_COLORS.accent} />
+            <StatBlock label="Sätze" value={0} color={JOUR_COLORS.accent} />
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
             <button onClick={() => setRunning(r => !r)} style={{
@@ -390,12 +390,12 @@ function InteractiveSport({ state, setState }) {
               </svg>
             </div>
             <div style={{ flex: 1, fontFamily: FONT_BODY }}>
-              <div style={{ fontSize: 16, color: JOUR_COLORS.ink }}>Bankdrücken</div>
+              <div style={{ fontSize: 16, color: JOUR_COLORS.ink }}>Nächste Übung</div>
               <div style={{ fontSize: 12, color: JOUR_COLORS.sub, marginTop: 2 }}>
-                Satz 3 · 10 Wdh. · 60 kg
+                Bereit für den ersten Satz
               </div>
             </div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 28, color: JOUR_COLORS.ink }}>10</div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 28, color: JOUR_COLORS.ink }}>0</div>
           </div>
         </Card>
       </div>
@@ -522,103 +522,87 @@ function InteractiveDiagnostic({ state }) {
 }
 
 function InteractiveDashboard({ state }) {
-  const done = state.checklist.filter(c => c.done).length;
-  const todayScore = Math.round((done / state.checklist.length) * 100);
-  
+  const history = state.history || {};
   const now = new Date();
-  const currentDayIdx = (now.getDay() + 6) % 7; 
   
-  const week = Array.from({ length: 7 }).map((_, i) => {
-    if (i === currentDayIdx) return todayScore;
-    const d = new Date();
-    d.setDate(now.getDate() - (currentDayIdx - i));
+  // Calculate current week scores
+  const weekData = Array(7).fill(0);
+  const currentDayIdx = (now.getDay() + 6) % 7; // Mon=0, Sun=6
+  
+  // Get start of week (Monday)
+  const startOfWeek = new Date(now);
+  const diff = now.getDate() - currentDayIdx;
+  startOfWeek.setDate(diff);
+  startOfWeek.setHours(0,0,0,0);
+
+  let totalScore = 0;
+  let scoreCount = 0;
+  let bestVal = -1;
+  let bestDateStr = '';
+
+  // Current day live score
+  const doneCount = state.checklist.filter(c => c.done).length;
+  const todayScore = Math.round((doneCount / state.checklist.length) * 100);
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
     const dStr = d.toISOString().split('T')[0];
-    return state.history[dStr] || 0;
-  });
+    
+    let s = 0;
+    if (i === currentDayIdx) {
+      s = todayScore;
+    } else {
+      s = (history[dStr] && history[dStr].score) || 0;
+    }
+    
+    weekData[i] = s;
+    if (s > 0) {
+      totalScore += s;
+      scoreCount++;
+      if (s > bestVal) {
+        bestVal = s;
+        bestDateStr = dStr;
+      }
+    }
+  }
+
+  const avg = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
   
-  const avg = Math.round(week.reduce((a,b)=>a+b,0)/week.length);
-  const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  const bestDayName = bestDateStr 
+    ? new Intl.DateTimeFormat('de-DE', { weekday: 'long' }).format(new Date(bestDateStr))
+    : 'Noch keine Daten';
+    
+  const bestDayLabel = bestVal > 0 
+    ? `${bestVal} / 100 Punkte`
+    : 'Starte heute';
+
   const monthStr = new Intl.DateTimeFormat('de-DE', { month: 'long' }).format(now);
+  const weekLabel = `Woche · ${monthStr}`;
+
+  const insights = [
+    "Trinke mehr Wasser für bessere Fokus-Werte.",
+    "Deine Morgenroutine ist der Schlüssel zum Erfolg.",
+    "Gute Arbeit! Deine Disziplin zahlt sich aus.",
+    "Schlaf ist die Basis für deine Regeneration."
+  ];
+  const activeInsight = scoreCount > 0 ? insights[Math.floor((now.getDate() % insights.length))] : "Erfasse deine Gewohnheiten, um Trends zu sehen.";
 
   return (
-    <div style={{ background: JOUR_COLORS.paper, minHeight: '100%', paddingBottom: 120 }}>
-      <div style={{ padding: '70px 22px 10px', fontFamily: FONT_BODY }}>
-        <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: JOUR_COLORS.sub }}>Woche · {monthStr}</div>
-        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 34, lineHeight: 1, marginTop: 8,
-          color: JOUR_COLORS.ink, letterSpacing: '-0.01em' }}>Dein Fortschritt</div>
-      </div>
-      <div style={{ padding: '0 22px' }}>
-        <Card pad={18}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 18 }}>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 56, lineHeight: 1,
-              color: JOUR_COLORS.ink, letterSpacing: '-0.02em' }}>{avg}</div>
-            <div style={{ fontFamily: FONT_BODY, fontSize: 12, color: JOUR_COLORS.sub }}>
-              Durchschnitt<br/>diese Woche
-            </div>
-            <div style={{ flex: 1 }}/>
-            <Pill color={JOUR_COLORS.accentSoft} text={JOUR_COLORS.accent}>+ 8 %</Pill>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 140, padding: '0 4px' }}>
-            {week.map((v, i) => (
-              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column',
-                alignItems: 'center', gap: 6, height: '100%' }}>
-                <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
-                  <div style={{
-                    width: '100%', height: `${Math.max(4,(v/100)*100)}%`,
-                    background: i === currentDayIdx ? JOUR_COLORS.accent : 'oklch(66% 0.16 145 / 0.35)',
-                    borderRadius: '6px 6px 2px 2px',
-                    transition: 'height 400ms',
-                  }}/>
-                </div>
-                <div style={{ fontFamily: FONT_MONO, fontSize: 10,
-                  color: i === currentDayIdx ? JOUR_COLORS.ink : JOUR_COLORS.sub }}>
-                  {days[i]}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <Card pad={16}>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.14em',
-              color: JOUR_COLORS.sub, textTransform: 'uppercase' }}>Serie</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginTop: 6 }}>
-              <div style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: JOUR_COLORS.ink,
-                letterSpacing: '-0.02em' }}>{state.streak}</div>
-              <div style={{ fontSize: 13, color: JOUR_COLORS.sub, fontFamily: FONT_BODY }}>Tage</div>
-            </div>
-            <div style={{ display: 'flex', gap: 3, marginTop: 10 }}>
-              {Array.from({length: 12}).map((_, i) => (
-                <div key={i} style={{ flex: 1, height: 14, borderRadius: 3,
-                  background: JOUR_COLORS.accent, opacity: 0.35 + (i / 11) * 0.65 }}/>
-              ))}
-            </div>
-          </Card>
-          <Card pad={16}>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.14em',
-              color: JOUR_COLORS.sub, textTransform: 'uppercase' }}>Bester Tag</div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 28, color: JOUR_COLORS.ink,
-              marginTop: 6, letterSpacing: '-0.01em' }}>Freitag</div>
-            <div style={{ fontFamily: FONT_BODY, fontSize: 12, color: JOUR_COLORS.sub, marginTop: 4 }}>
-              Alles erreicht · 90 / 100
-            </div>
-          </Card>
-        </div>
-
-        <div style={{ marginTop: 12 }}>
-          <Card pad={16}>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.14em',
-              color: JOUR_COLORS.sub, textTransform: 'uppercase' }}>Was wir bemerkt haben</div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 18, lineHeight: 1.3,
-              color: JOUR_COLORS.ink, marginTop: 8, letterSpacing: '-0.005em' }}>
-              Deine Morgeneinheiten geben dir + 22 % Score.
-            </div>
-          </Card>
-          <div style={{ textAlign: 'center', marginTop: 12, fontSize: 10, color: JOUR_COLORS.sub, opacity: 0.5 }}>
-            Version 2.3 — Active
-          </div>
+    <div style={{ background: JOUR_COLORS.paper, minHeight: '100%' }}>
+      <TagHeader greeting="Fortschritt" />
+      <div style={{ padding: '0 22px 120px' }}>
+        <DashboardScreen 
+          week={weekData} 
+          avg={avg} 
+          streak={state.streak} 
+          bestDay={bestDayName}
+          bestDayLabel={bestDayLabel}
+          insight={activeInsight}
+          weekLabel={weekLabel}
+        />
+        <div style={{ textAlign: 'center', marginTop: 12, fontSize: 10, color: JOUR_COLORS.sub, opacity: 0.5 }}>
+          Version 2.3 — Active
         </div>
       </div>
     </div>
