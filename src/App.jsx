@@ -617,7 +617,7 @@ function InteractiveDashboard({ state }) {
             </div>
           </Card>
           <div style={{ textAlign: 'center', marginTop: 12, fontSize: 10, color: JOUR_COLORS.sub, opacity: 0.5 }}>
-            Version 2.1 — Refreshed
+            Version 2.3 — Active
           </div>
         </div>
       </div>
