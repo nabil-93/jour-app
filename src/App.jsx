@@ -5,9 +5,11 @@ import {
 } from './screens';
 import { IOSDevice } from './ios-frame';
 
-const LS_KEY = 'jour-app-state-v1';
+const LS_KEY = 'jour-app-state-v2';
 
 const DEFAULT_STATE = {
+  currentDate: new Date().toISOString().split('T')[0],
+  history: {}, 
   checklist: [
     { label: '5 km laufen', done: false },
     { label: 'Ausgewogenes Frühstück', done: false },
@@ -27,6 +29,22 @@ function loadState() {
   try {
     const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
     if (!s) return DEFAULT_STATE;
+    
+    const today = new Date().toISOString().split('T')[0];
+    if (s.currentDate !== today) {
+      const done = (s.checklist || []).filter(c => c.done).length;
+      const score = Math.round((done / (s.checklist?.length || 6)) * 100);
+      const newHistory = { ...(s.history || {}), [s.currentDate]: score };
+      const newStreak = score > 50 ? (s.streak || 0) + 1 : s.streak;
+
+      return { 
+        ...DEFAULT_STATE, 
+        history: newHistory, 
+        currentDate: today,
+        streak: newStreak
+      };
+    }
+    
     return { ...DEFAULT_STATE, ...s };
   } catch { return DEFAULT_STATE; }
 }
@@ -506,11 +524,16 @@ function InteractiveDashboard({ state }) {
   const done = state.checklist.filter(c => c.done).length;
   const todayScore = Math.round((done / state.checklist.length) * 100);
   
-  // Real week mapping
   const now = new Date();
-  const currentDayIdx = (now.getDay() + 6) % 7; // Monday = 0, Sunday = 6
-  const weekBase = [62, 74, 55, 81, 90, 70, 75]; // Mock data
-  const week = weekBase.map((v, i) => i === currentDayIdx ? todayScore : v);
+  const currentDayIdx = (now.getDay() + 6) % 7; 
+  
+  const week = Array.from({ length: 7 }).map((_, i) => {
+    if (i === currentDayIdx) return todayScore;
+    const d = new Date();
+    d.setDate(now.getDate() - (currentDayIdx - i));
+    const dStr = d.toISOString().split('T')[0];
+    return state.history[dStr] || 0;
+  });
   
   const avg = Math.round(week.reduce((a,b)=>a+b,0)/week.length);
   const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
