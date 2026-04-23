@@ -8,6 +8,7 @@ import { IOSDevice } from './ios-frame';
 const LS_KEY = 'jour-app-state-v2';
 
 const DEFAULT_STATE = {
+  userName: '',
   currentDate: new Date().toISOString().split('T')[0],
   history: {}, 
   checklist: [
@@ -135,7 +136,7 @@ function InteractiveHome({ state, setState, onNav }) {
 
   return (
     <div style={{ background: JOUR_COLORS.paper, minHeight: '100%' }}>
-      <JourHeader />
+      <JourHeader greeting={state.userName ? `Guten Morgen, ${state.userName}` : 'Guten Morgen'} />
       <div style={{ padding: '0 22px 120px', fontFamily: FONT_BODY }}>
         <div style={{
           color: JOUR_COLORS.sub, fontSize: 15, marginTop: -8, marginBottom: 18,
@@ -623,6 +624,43 @@ function InteractiveDashboard({ state }) {
 
 // ─── Phone shell with routing ──────────────────────────────────────────────
 
+function WelcomeScreen({ onSave }) {
+  const [name, setName] = React.useState('');
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 10000,
+      background: JOUR_COLORS.paper, display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', padding: 40,
+      textAlign: 'center', fontFamily: FONT_BODY
+    }}>
+      <div style={{ fontFamily: FONT_DISPLAY, fontSize: 42, color: JOUR_COLORS.ink, marginBottom: 12 }}>Willkommen</div>
+      <div style={{ fontSize: 16, color: JOUR_COLORS.sub, marginBottom: 32 }}>Wie dürfen wir dich nennen?</div>
+      <input
+        value={name}
+        onChange={e => setName(e.target.value)}
+        placeholder="Dein Name"
+        style={{
+          width: '100%', padding: '16px 20px', borderRadius: 16,
+          border: `1.5px solid ${JOUR_COLORS.line}`, background: JOUR_COLORS.card,
+          fontSize: 18, fontFamily: FONT_BODY, textAlign: 'center',
+          outline: 'none', color: JOUR_COLORS.ink, marginBottom: 24,
+        }}
+      />
+      <button
+        onClick={() => name.trim() && onSave(name.trim())}
+        style={{
+          width: '100%', padding: '16px', borderRadius: 16,
+          background: name.trim() ? JOUR_COLORS.ink : JOUR_COLORS.line,
+          color: '#fff', fontSize: 16, fontWeight: 500, border: 'none',
+          cursor: name.trim() ? 'pointer' : 'default', transition: 'all 200ms'
+        }}
+      >
+        Starten
+      </button>
+    </div>
+  );
+}
+
 function InstallPrompt() {
   const [show, setShow] = React.useState(false);
   React.useEffect(() => {
@@ -719,6 +757,7 @@ function PhoneApp({ initial = 'home', label }) {
 
   return (
     <div style={{ position: 'relative' }} data-screen-label={label || screen}>
+      {!state.userName && <WelcomeScreen onSave={(name) => update({ ...state, userName: name })} />}
       <InstallPrompt />
       <IOSDevice width={390} height={844}>
         {appContent}
