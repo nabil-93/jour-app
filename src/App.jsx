@@ -770,17 +770,23 @@ function PhoneApp({ initial = 'home', label }) {
     </div>
   );
 
-  if (isMobile) {
-    return <div style={{ position: 'fixed', inset: 0 }}>{appContent}</div>;
-  }
+  const content = (
+    <>
+      {!state.userName && <WelcomeScreen onSave={(name) => update({ ...state, userName: name })} />}
+      <InstallPrompt />
+      {isMobile ? (
+        <div style={{ position: 'fixed', inset: 0 }}>{appContent}</div>
+      ) : (
+        <IOSDevice width={390} height={844}>
+          {appContent}
+        </IOSDevice>
+      )}
+    </>
+  );
 
   return (
     <div style={{ position: 'relative' }} data-screen-label={label || screen}>
-      {!state.userName && <WelcomeScreen onSave={(name) => update({ ...state, userName: name })} />}
-      <InstallPrompt />
-      <IOSDevice width={390} height={844}>
-        {appContent}
-      </IOSDevice>
+      {content}
     </div>
   );
 }
