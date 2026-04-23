@@ -1,4 +1,4 @@
-# Jour — Ta journée, notée
+# Tag — Dein Tag, bewertet
 
 Ein minimalistischer Sport- und Wellness-Tracker mit Fokus auf Ästhetik und einfacher Bedienung.
 

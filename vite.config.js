@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Jour — Ta journée, notée',
-        short_name: 'Jour',
+        name: 'Tag — Dein Tag, bewertet',
+        short_name: 'Tag',
         description: 'Sport und Wellness Tracking App',
         theme_color: '#f5f1ea',
         background_color: '#f5f1ea',
