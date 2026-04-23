@@ -21,7 +21,7 @@ export const FONT_MONO = '"Geist Mono", "JetBrains Mono", ui-monospace, monospac
 
 // ── Atome ────────────────────────────────────────────────────
 
-export function JourHeader({ date, greeting = 'Guten Morgen' }) {
+export function TagHeader({ date, greeting = 'Guten Morgen' }) {
   const displayDate = date || new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: 'long' }).format(new Date());
   return (
     <div style={{ padding: '70px 22px 18px', fontFamily: FONT_BODY }}>

@@ -5,7 +5,7 @@ import {
 } from './screens';
 import { IOSDevice } from './ios-frame';
 
-const LS_KEY = 'jour-app-state-v2';
+const LS_KEY = 'tag-app-state-v1';
 
 const DEFAULT_STATE = {
   userName: '',
@@ -136,7 +136,7 @@ function InteractiveHome({ state, setState, onNav }) {
 
   return (
     <div style={{ background: JOUR_COLORS.paper, minHeight: '100%' }}>
-      <JourHeader greeting={state.userName ? `Guten Morgen, ${state.userName}` : 'Guten Morgen'} />
+      <TagHeader greeting={state.userName ? `Guten Morgen, ${state.userName}` : 'Guten Morgen'} />
       <div style={{ padding: '0 22px 120px', fontFamily: FONT_BODY }}>
         <div style={{
           color: JOUR_COLORS.sub, fontSize: 15, marginTop: -8, marginBottom: 18,
