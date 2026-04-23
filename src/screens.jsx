@@ -21,11 +21,12 @@ export const FONT_MONO = '"Geist Mono", "JetBrains Mono", ui-monospace, monospac
 
 // ── Atome ────────────────────────────────────────────────────
 
-export function JourHeader({ date = 'Do. 23. April', greeting = 'Guten Morgen' }) {
+export function JourHeader({ date, greeting = 'Guten Morgen' }) {
+  const displayDate = date || new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: 'long' }).format(new Date());
   return (
     <div style={{ padding: '70px 22px 18px', fontFamily: FONT_BODY }}>
       <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.12em',
-        textTransform: 'uppercase', color: JOUR_COLORS.sub }}>{date}</div>
+        textTransform: 'uppercase', color: JOUR_COLORS.sub }}>{displayDate}</div>
       <div style={{ fontFamily: FONT_DISPLAY, fontSize: 38, lineHeight: 1,
         color: JOUR_COLORS.ink, marginTop: 10, letterSpacing: '-0.01em' }}>{greeting}</div>
     </div>

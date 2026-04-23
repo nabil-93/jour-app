@@ -391,11 +391,12 @@ function InteractiveJournal({ state, setState }) {
     { emoji: '😤', label: 'stark' },
     { emoji: '😴', label: 'müde' },
   ];
+  const todayStr = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: 'long' }).format(new Date());
   return (
     <div style={{ background: JOUR_COLORS.paper, minHeight: '100%', paddingBottom: 120 }}>
       <div style={{ padding: '70px 22px 14px', fontFamily: FONT_BODY }}>
         <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: JOUR_COLORS.sub }}>Do. 23. April · Abend</div>
+          textTransform: 'uppercase', color: JOUR_COLORS.sub }}>{todayStr} · Abend</div>
         <div style={{ fontFamily: FONT_DISPLAY, fontSize: 34, lineHeight: 1, marginTop: 8,
           color: JOUR_COLORS.ink, letterSpacing: '-0.01em' }}>Was hast du heute gemacht?</div>
       </div>
@@ -504,14 +505,22 @@ function InteractiveDiagnostic({ state }) {
 function InteractiveDashboard({ state }) {
   const done = state.checklist.filter(c => c.done).length;
   const todayScore = Math.round((done / state.checklist.length) * 100);
-  const week = [62, 74, 55, 81, 90, 70, todayScore];
+  
+  // Real week mapping
+  const now = new Date();
+  const currentDayIdx = (now.getDay() + 6) % 7; // Monday = 0, Sunday = 6
+  const weekBase = [62, 74, 55, 81, 90, 70, 75]; // Mock data
+  const week = weekBase.map((v, i) => i === currentDayIdx ? todayScore : v);
+  
   const avg = Math.round(week.reduce((a,b)=>a+b,0)/week.length);
   const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  const monthStr = new Intl.DateTimeFormat('de-DE', { month: 'long' }).format(now);
+
   return (
     <div style={{ background: JOUR_COLORS.paper, minHeight: '100%', paddingBottom: 120 }}>
       <div style={{ padding: '70px 22px 10px', fontFamily: FONT_BODY }}>
         <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: JOUR_COLORS.sub }}>Woche 16 · April</div>
+          textTransform: 'uppercase', color: JOUR_COLORS.sub }}>Woche · {monthStr}</div>
         <div style={{ fontFamily: FONT_DISPLAY, fontSize: 34, lineHeight: 1, marginTop: 8,
           color: JOUR_COLORS.ink, letterSpacing: '-0.01em' }}>Dein Fortschritt</div>
       </div>
@@ -533,13 +542,13 @@ function InteractiveDashboard({ state }) {
                 <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
                   <div style={{
                     width: '100%', height: `${Math.max(4,(v/100)*100)}%`,
-                    background: i === week.length - 1 ? JOUR_COLORS.accent : 'oklch(66% 0.16 145 / 0.35)',
+                    background: i === currentDayIdx ? JOUR_COLORS.accent : 'oklch(66% 0.16 145 / 0.35)',
                     borderRadius: '6px 6px 2px 2px',
                     transition: 'height 400ms',
                   }}/>
                 </div>
                 <div style={{ fontFamily: FONT_MONO, fontSize: 10,
-                  color: i === week.length - 1 ? JOUR_COLORS.ink : JOUR_COLORS.sub }}>
+                  color: i === currentDayIdx ? JOUR_COLORS.ink : JOUR_COLORS.sub }}>
                   {days[i]}
                 </div>
               </div>
