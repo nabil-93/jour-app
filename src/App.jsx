@@ -602,7 +602,7 @@ function InteractiveDashboard({ state }) {
           weekLabel={weekLabel}
         />
         <div style={{ textAlign: 'center', marginTop: 12, fontSize: 10, color: JOUR_COLORS.sub, opacity: 0.5 }}>
-          Version 2.3 — Active
+          Version 2.5 — Final
         </div>
       </div>
     </div>
