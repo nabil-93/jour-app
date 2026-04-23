@@ -594,6 +594,13 @@ function InteractiveDashboard({ state }) {
 function PhoneApp({ initial = 'home', label }) {
   const [state, setState] = React.useState(loadState);
   const [screen, setScreen] = React.useState(initial);
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth < 500);
+
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 500);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const update = (next) => {
     setState(next);
@@ -633,15 +640,23 @@ function PhoneApp({ initial = 'home', label }) {
     default: body = null;
   }
 
+  const appContent = (
+    <div style={{ height: '100%', position: 'relative', background: JOUR_COLORS.paper }}>
+      <div style={{ position: 'absolute', inset: 0, overflow: 'auto' }}>
+        {body}
+      </div>
+      <BottomNav active={screen} onNav={setScreen}/>
+    </div>
+  );
+
+  if (isMobile) {
+    return <div style={{ position: 'fixed', inset: 0 }}>{appContent}</div>;
+  }
+
   return (
     <div style={{ position: 'relative' }} data-screen-label={label || screen}>
       <IOSDevice width={390} height={844}>
-        <div style={{ height: '100%', position: 'relative' }}>
-          <div style={{ position: 'absolute', inset: 0, overflow: 'auto' }}>
-            {body}
-          </div>
-          <BottomNav active={screen} onNav={setScreen}/>
-        </div>
+        {appContent}
       </IOSDevice>
     </div>
   );
