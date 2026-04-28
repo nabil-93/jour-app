@@ -580,7 +580,8 @@ function InteractiveDashboard({ state }) {
     if (i === currentDayIdx) {
       s = todayScore;
     } else {
-      s = (history[dStr] && history[dStr].score) || 0;
+      const h = history[dStr];
+      s = typeof h === 'number' ? h : (h && h.score) || 0;
     }
     
     weekData[i] = s;
@@ -629,7 +630,7 @@ function InteractiveDashboard({ state }) {
           weekLabel={weekLabel}
         />
         <div style={{ textAlign: 'center', marginTop: 12, fontSize: 10, color: JOUR_COLORS.sub, opacity: 0.5 }}>
-          Version 2.6 — Fixed
+          Version 2.7 — History Fixed
         </div>
       </div>
     </div>
