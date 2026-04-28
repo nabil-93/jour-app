@@ -23,7 +23,7 @@ const DEFAULT_STATE = {
   mealNote: '',
   journalText: '',
   mood: null,
-  streak: 12,
+  streak: 0,
 };
 
 function loadState() {
@@ -36,7 +36,7 @@ function loadState() {
       const done = (s.checklist || []).filter(c => c.done).length;
       const score = Math.round((done / (s.checklist?.length || 6)) * 100);
       const newHistory = { ...(s.history || {}), [s.currentDate]: score };
-      const newStreak = score > 50 ? (s.streak || 0) + 1 : s.streak;
+      const newStreak = score > 50 ? (s.streak || 0) + 1 : 0;
 
       return { 
         ...DEFAULT_STATE, 
