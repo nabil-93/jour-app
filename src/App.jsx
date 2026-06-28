@@ -423,7 +423,7 @@ function TapChecklistRow({ label, done, isLast, onClick }) {
 function InteractiveMeal({ state, setState }) {
   const [editing, setEditing] = React.useState(false);
   const [editorState, setEditorState] = React.useState(null); // { index: null|number, text, kcal }
-  const foods = state.foods;
+  const foods = state.foods || DEFAULT_STATE.foods;
 
   const toggle = (i) => {
     const sel = state.selectedMeals.includes(i)
@@ -553,7 +553,7 @@ function InteractiveSport({ state, setState }) {
   const [editing, setEditing] = React.useState(false);
   const [editorState, setEditorState] = React.useState(null); // { index: null|number, text }
 
-  const exercises = state.exercises;
+  const exercises = state.exercises || DEFAULT_STATE.exercises;
 
   const openAdd = () => setEditorState({ index: null, text: '' });
   const openEdit = (i) => setEditorState({ index: i, text: exercises[i] });
