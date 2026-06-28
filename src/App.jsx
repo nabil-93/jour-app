@@ -26,26 +26,44 @@ const DEFAULT_STATE = {
   streak: 0,
 };
 
+function addDays(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return dt.toISOString().split('T')[0];
+}
+
 function loadState() {
   try {
     const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
     if (!s) return DEFAULT_STATE;
-    
+
     const today = new Date().toISOString().split('T')[0];
-    if (s.currentDate !== today) {
+    if (s.currentDate && s.currentDate !== today) {
+      // Archive the last-seen day's live score, then walk forward day by
+      // day so a multi-day gap (app closed for a while) doesn't drop history
+      // for every day except the most recent one.
       const done = (s.checklist || []).filter(c => c.done).length;
       const score = Math.round((done / (s.checklist?.length || 6)) * 100);
-      const newHistory = { ...(s.history || {}), [s.currentDate]: score };
-      const newStreak = score > 50 ? (s.streak || 0) + 1 : 0;
+      const history = { ...(s.history || {}), [s.currentDate]: score };
 
-      return { 
-        ...DEFAULT_STATE, 
-        history: newHistory, 
+      let streak = score > 50 ? (s.streak || 0) + 1 : 0;
+      let cursor = addDays(s.currentDate, 1);
+      let guard = 0;
+      while (cursor !== today && guard < 3650) {
+        history[cursor] = 0;
+        streak = 0;
+        cursor = addDays(cursor, 1);
+        guard++;
+      }
+
+      return {
+        ...DEFAULT_STATE,
+        history,
         currentDate: today,
-        streak: newStreak
+        streak,
       };
     }
-    
+
     return { ...DEFAULT_STATE, ...s };
   } catch { return DEFAULT_STATE; }
 }
@@ -903,6 +921,15 @@ function PhoneApp({ initial = 'home', label }) {
         const raw = localStorage.getItem(LS_KEY);
         if (!raw) return;
         const parsed = JSON.parse(raw);
+        const today = new Date().toISOString().split('T')[0];
+        if (parsed.currentDate !== today) {
+          // App stayed open across midnight: roll the day over now,
+          // archiving the score it had before today started.
+          const rolled = loadState();
+          setState(rolled);
+          saveState(rolled);
+          return;
+        }
         setState(prev => JSON.stringify(prev) === raw ? prev : parsed);
       } catch {}
     }, 400);
