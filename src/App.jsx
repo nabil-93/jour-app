@@ -126,13 +126,44 @@ function BottomNav({ active, onNav }) {
 // ─── Interactive wrappers ──────────────────────────────────────────────────
 
 function InteractiveHome({ state, setState, onNav }) {
+  const [menuFor, setMenuFor] = React.useState(null); // index of row showing Bearbeiten/Löschen menu
+  const [editorState, setEditorState] = React.useState(null); // { index: null|number, text: string }
+  const pressTimer = React.useRef(null);
+
   const toggle = (i) => {
     const list = state.checklist.map((c, j) => j === i ? { ...c, done: !c.done } : c);
     setState({ ...state, checklist: list });
   };
+
+  const startPress = (i) => {
+    pressTimer.current = setTimeout(() => setMenuFor(i), 450);
+  };
+  const cancelPress = () => {
+    clearTimeout(pressTimer.current);
+  };
+
+  const openAdd = () => setEditorState({ index: null, text: '' });
+  const openEdit = (i) => { setMenuFor(null); setEditorState({ index: i, text: state.checklist[i].label }); };
+  const deleteItem = (i) => {
+    setMenuFor(null);
+    const list = state.checklist.filter((_, j) => j !== i);
+    setState({ ...state, checklist: list });
+  };
+  const saveEditor = (rawText, index) => {
+    const text = rawText.trim();
+    setEditorState(null);
+    if (!text) return;
+    if (index === null) {
+      setState({ ...state, checklist: [...state.checklist, { label: text, done: false }] });
+    } else {
+      const list = state.checklist.map((c, j) => j === index ? { ...c, label: text } : c);
+      setState({ ...state, checklist: list });
+    }
+  };
+
   const done = state.checklist.filter(c => c.done).length;
   const total = state.checklist.length;
-  const prog = done / total;
+  const prog = total > 0 ? done / total : 0;
 
   return (
     <div style={{ background: JOUR_COLORS.paper, minHeight: '100%' }}>
@@ -183,9 +214,122 @@ function InteractiveHome({ state, setState, onNav }) {
           {state.checklist.map((c, i) => (
             <TapChecklistRow key={i} label={c.label} done={c.done}
               isLast={i === state.checklist.length - 1}
-              onClick={() => toggle(i)}/>
+              onClick={() => toggle(i)}
+              onPressStart={() => startPress(i)}
+              onPressEnd={cancelPress}/>
           ))}
+          {state.checklist.length === 0 && (
+            <div style={{ padding: '18px 16px', fontSize: 13, color: JOUR_COLORS.sub, fontFamily: FONT_BODY }}>
+              Noch keine Ziele. Füge eins hinzu.
+            </div>
+          )}
         </Card>
+        <button onClick={openAdd} style={{
+          width: '100%', marginTop: 10, padding: '14px 0', borderRadius: 16,
+          border: `1.5px dashed ${JOUR_COLORS.line}`, background: 'transparent',
+          color: JOUR_COLORS.sub, fontFamily: FONT_BODY, fontSize: 14, fontWeight: 500,
+          cursor: 'pointer',
+        }}>+ Hinzufügen</button>
+      </div>
+
+      {menuFor !== null && (
+        <RowActionSheet
+          label={state.checklist[menuFor]?.label}
+          onEdit={() => openEdit(menuFor)}
+          onDelete={() => deleteItem(menuFor)}
+          onClose={() => setMenuFor(null)}
+        />
+      )}
+
+      {editorState && (
+        <ItemEditor
+          initialText={editorState.text}
+          isNew={editorState.index === null}
+          onSave={(text) => saveEditor(text, editorState.index)}
+          onCancel={() => setEditorState(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function RowActionSheet({ label, onEdit, onDelete, onClose }) {
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 20000,
+      background: 'rgba(26,24,21,0.32)',
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', maxWidth: 420, background: JOUR_COLORS.paper,
+        borderRadius: '22px 22px 0 0', padding: '10px 14px 28px',
+        fontFamily: FONT_BODY,
+      }}>
+        <div style={{
+          textAlign: 'center', fontSize: 12, color: JOUR_COLORS.sub,
+          padding: '10px 0', borderBottom: `1px solid ${JOUR_COLORS.line}`,
+        }}>{label}</div>
+        <button onClick={onEdit} style={{
+          width: '100%', textAlign: 'center', padding: '16px 0', background: 'none',
+          border: 'none', borderBottom: `1px solid ${JOUR_COLORS.line}`,
+          color: JOUR_COLORS.ink, fontSize: 16, cursor: 'pointer', fontFamily: FONT_BODY,
+        }}>Bearbeiten</button>
+        <button onClick={onDelete} style={{
+          width: '100%', textAlign: 'center', padding: '16px 0', background: 'none',
+          border: 'none', color: JOUR_COLORS.coral, fontSize: 16, cursor: 'pointer',
+          fontFamily: FONT_BODY,
+        }}>Löschen</button>
+        <button onClick={onClose} style={{
+          width: '100%', textAlign: 'center', padding: '14px 0', marginTop: 8,
+          background: JOUR_COLORS.card, borderRadius: 14, border: 'none',
+          color: JOUR_COLORS.ink, fontSize: 15, fontWeight: 500, cursor: 'pointer',
+          fontFamily: FONT_BODY,
+        }}>Abbrechen</button>
+      </div>
+    </div>
+  );
+}
+
+function ItemEditor({ initialText, isNew, onSave, onCancel }) {
+  const [text, setText] = React.useState(initialText);
+  return (
+    <div onClick={onCancel} style={{
+      position: 'fixed', inset: 0, zIndex: 20001,
+      background: 'rgba(26,24,21,0.32)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', maxWidth: 360, background: JOUR_COLORS.paper,
+        borderRadius: 22, padding: 20, fontFamily: FONT_BODY,
+      }}>
+        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, color: JOUR_COLORS.ink, marginBottom: 14 }}>
+          {isNew ? 'Neues Ziel' : 'Ziel bearbeiten'}
+        </div>
+        <input
+          autoFocus
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') onSave(text); }}
+          placeholder="z.B. 10.000 Schritte"
+          style={{
+            width: '100%', padding: '14px 16px', borderRadius: 14,
+            border: `1.5px solid ${JOUR_COLORS.line}`, background: JOUR_COLORS.card,
+            fontSize: 15, fontFamily: FONT_BODY, outline: 'none', color: JOUR_COLORS.ink,
+            marginBottom: 16, boxSizing: 'border-box',
+          }}
+        />
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onCancel} style={{
+            flex: 1, padding: '14px 0', borderRadius: 14, border: `1px solid ${JOUR_COLORS.line}`,
+            background: 'transparent', color: JOUR_COLORS.ink, fontSize: 15, cursor: 'pointer',
+            fontFamily: FONT_BODY,
+          }}>Abbrechen</button>
+          <button onClick={() => onSave(text)} style={{
+            flex: 1, padding: '14px 0', borderRadius: 14, border: 'none',
+            background: JOUR_COLORS.ink, color: '#fff', fontSize: 15, fontWeight: 500,
+            cursor: 'pointer', fontFamily: FONT_BODY,
+          }}>Speichern</button>
+        </div>
       </div>
     </div>
   );
@@ -210,15 +354,21 @@ function TapMetric({ label, value, accent, onClick }) {
   );
 }
 
-function TapChecklistRow({ label, done, isLast, onClick }) {
+function TapChecklistRow({ label, done, isLast, onClick, onPressStart, onPressEnd }) {
   return (
-    <button onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 12,
-      padding: '14px 16px', width: '100%',
-      background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-      borderBottom: isLast ? 'none' : `1px solid ${JOUR_COLORS.line}`,
-      fontFamily: FONT_BODY,
-    }}>
+    <button
+      onClick={onClick}
+      onPointerDown={onPressStart}
+      onPointerUp={onPressEnd}
+      onPointerLeave={onPressEnd}
+      onContextMenu={e => e.preventDefault()}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '14px 16px', width: '100%',
+        background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+        borderBottom: isLast ? 'none' : `1px solid ${JOUR_COLORS.line}`,
+        fontFamily: FONT_BODY, userSelect: 'none', WebkitUserSelect: 'none',
+      }}>
       <Check on={done} />
       <div style={{
         flex: 1, fontSize: 15,
