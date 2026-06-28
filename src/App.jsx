@@ -19,6 +19,17 @@ const DEFAULT_STATE = {
     { label: '15 Min. lesen', done: false },
     { label: 'Vor 23 Uhr schlafen', done: false },
   ],
+  foods: [
+    { name: 'Avocado-Toast', kcal: 320, tag: 'Frühstück', color: 'accentSoft' },
+    { name: '3-Eier-Omelett', kcal: 290, tag: 'Protein', color: 'coralSoft' },
+    { name: 'Quinoa-Salat', kcal: 420, tag: 'Mittagessen', color: 'lilacSoft' },
+    { name: 'Hähnchen + Reis', kcal: 560, tag: 'Mittagessen', color: 'accentSoft' },
+    { name: 'Joghurt + Früchte', kcal: 180, tag: 'Snack', color: 'coralSoft' },
+  ],
+  exercises: [
+    'Bankdrücken', 'Kniebeugen', 'Kreuzheben',
+    'Schulterdrücken', 'Klimmzüge', 'Rudern',
+  ],
   selectedMeals: [],
   mealNote: '',
   journalText: '',
@@ -141,29 +152,72 @@ function BottomNav({ active, onNav }) {
   );
 }
 
+// ─── Editable list (Bearbeiten mode) ───────────────────────────────────────
+//
+// Shared by Home checklist, Essen foods, and Sport exercises: a "Bearbeiten"
+// button toggles a mode where every row shows edit/delete icons and a
+// "+ Hinzufügen" button appears to append a new item.
+
+function EditButton({ active, onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      background: active ? JOUR_COLORS.ink : JOUR_COLORS.card,
+      color: active ? '#fff' : JOUR_COLORS.ink,
+      border: active ? 'none' : `1px solid ${JOUR_COLORS.line}`,
+      borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 500,
+      fontFamily: FONT_BODY, cursor: 'pointer',
+    }}>{active ? 'Fertig' : 'Bearbeiten'}</button>
+  );
+}
+
+function EditableRow({ children, editing, isLast, onEdit, onDelete }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      borderBottom: isLast ? 'none' : `1px solid ${JOUR_COLORS.line}`,
+    }}>
+      <div style={{ flex: 1 }}>{children}</div>
+      {editing && (
+        <div style={{ display: 'flex', gap: 4, paddingRight: 10 }}>
+          <button onClick={onEdit} aria-label="Bearbeiten" style={{
+            width: 32, height: 32, borderRadius: 10, border: 'none',
+            background: JOUR_COLORS.line, cursor: 'pointer', fontSize: 14,
+          }}>✏️</button>
+          <button onClick={onDelete} aria-label="Löschen" style={{
+            width: 32, height: 32, borderRadius: 10, border: 'none',
+            background: JOUR_COLORS.coralSoft, cursor: 'pointer', fontSize: 14,
+          }}>🗑️</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AddButton({ onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      width: '100%', marginTop: 10, padding: '14px 0', borderRadius: 16,
+      border: `1.5px dashed ${JOUR_COLORS.line}`, background: 'transparent',
+      color: JOUR_COLORS.sub, fontFamily: FONT_BODY, fontSize: 14, fontWeight: 500,
+      cursor: 'pointer',
+    }}>+ Hinzufügen</button>
+  );
+}
+
 // ─── Interactive wrappers ──────────────────────────────────────────────────
 
 function InteractiveHome({ state, setState, onNav }) {
-  const [menuFor, setMenuFor] = React.useState(null); // index of row showing Bearbeiten/Löschen menu
+  const [editing, setEditing] = React.useState(false);
   const [editorState, setEditorState] = React.useState(null); // { index: null|number, text: string }
-  const pressTimer = React.useRef(null);
 
   const toggle = (i) => {
     const list = state.checklist.map((c, j) => j === i ? { ...c, done: !c.done } : c);
     setState({ ...state, checklist: list });
   };
 
-  const startPress = (i) => {
-    pressTimer.current = setTimeout(() => setMenuFor(i), 450);
-  };
-  const cancelPress = () => {
-    clearTimeout(pressTimer.current);
-  };
-
   const openAdd = () => setEditorState({ index: null, text: '' });
-  const openEdit = (i) => { setMenuFor(null); setEditorState({ index: i, text: state.checklist[i].label }); };
+  const openEdit = (i) => setEditorState({ index: i, text: state.checklist[i].label });
   const deleteItem = (i) => {
-    setMenuFor(null);
     const list = state.checklist.filter((_, j) => j !== i);
     setState({ ...state, checklist: list });
   };
@@ -227,14 +281,18 @@ function InteractiveHome({ state, setState, onNav }) {
             onClick={() => onNav('diagnostic')} />
         </div>
 
-        <SectionLabel>Heute abhaken</SectionLabel>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <SectionLabel>Heute abhaken</SectionLabel>
+          <EditButton active={editing} onClick={() => setEditing(e => !e)} />
+        </div>
         <Card pad={0}>
           {state.checklist.map((c, i) => (
-            <TapChecklistRow key={i} label={c.label} done={c.done}
+            <EditableRow key={i} editing={editing}
               isLast={i === state.checklist.length - 1}
-              onClick={() => toggle(i)}
-              onPressStart={() => startPress(i)}
-              onPressEnd={cancelPress}/>
+              onEdit={() => openEdit(i)} onDelete={() => deleteItem(i)}>
+              <TapChecklistRow label={c.label} done={c.done} isLast
+                onClick={() => toggle(i)}/>
+            </EditableRow>
           ))}
           {state.checklist.length === 0 && (
             <div style={{ padding: '18px 16px', fontSize: 13, color: JOUR_COLORS.sub, fontFamily: FONT_BODY }}>
@@ -242,22 +300,8 @@ function InteractiveHome({ state, setState, onNav }) {
             </div>
           )}
         </Card>
-        <button onClick={openAdd} style={{
-          width: '100%', marginTop: 10, padding: '14px 0', borderRadius: 16,
-          border: `1.5px dashed ${JOUR_COLORS.line}`, background: 'transparent',
-          color: JOUR_COLORS.sub, fontFamily: FONT_BODY, fontSize: 14, fontWeight: 500,
-          cursor: 'pointer',
-        }}>+ Hinzufügen</button>
+        {editing && <AddButton onClick={openAdd} />}
       </div>
-
-      {menuFor !== null && (
-        <RowActionSheet
-          label={state.checklist[menuFor]?.label}
-          onEdit={() => openEdit(menuFor)}
-          onDelete={() => deleteItem(menuFor)}
-          onClose={() => setMenuFor(null)}
-        />
-      )}
 
       {editorState && (
         <ItemEditor
@@ -271,45 +315,15 @@ function InteractiveHome({ state, setState, onNav }) {
   );
 }
 
-function RowActionSheet({ label, onEdit, onDelete, onClose }) {
-  return (
-    <div onClick={onClose} style={{
-      position: 'fixed', inset: 0, zIndex: 20000,
-      background: 'rgba(26,24,21,0.32)',
-      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-    }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        width: '100%', maxWidth: 420, background: JOUR_COLORS.paper,
-        borderRadius: '22px 22px 0 0', padding: '10px 14px 28px',
-        fontFamily: FONT_BODY,
-      }}>
-        <div style={{
-          textAlign: 'center', fontSize: 12, color: JOUR_COLORS.sub,
-          padding: '10px 0', borderBottom: `1px solid ${JOUR_COLORS.line}`,
-        }}>{label}</div>
-        <button onClick={onEdit} style={{
-          width: '100%', textAlign: 'center', padding: '16px 0', background: 'none',
-          border: 'none', borderBottom: `1px solid ${JOUR_COLORS.line}`,
-          color: JOUR_COLORS.ink, fontSize: 16, cursor: 'pointer', fontFamily: FONT_BODY,
-        }}>Bearbeiten</button>
-        <button onClick={onDelete} style={{
-          width: '100%', textAlign: 'center', padding: '16px 0', background: 'none',
-          border: 'none', color: JOUR_COLORS.coral, fontSize: 16, cursor: 'pointer',
-          fontFamily: FONT_BODY,
-        }}>Löschen</button>
-        <button onClick={onClose} style={{
-          width: '100%', textAlign: 'center', padding: '14px 0', marginTop: 8,
-          background: JOUR_COLORS.card, borderRadius: 14, border: 'none',
-          color: JOUR_COLORS.ink, fontSize: 15, fontWeight: 500, cursor: 'pointer',
-          fontFamily: FONT_BODY,
-        }}>Abbrechen</button>
-      </div>
-    </div>
-  );
-}
-
-function ItemEditor({ initialText, isNew, onSave, onCancel }) {
+function ItemEditor({
+  initialText, isNew, onSave, onCancel,
+  title, placeholder = 'z.B. 10.000 Schritte',
+  withKcal = false, initialKcal = '',
+}) {
   const [text, setText] = React.useState(initialText);
+  const [kcal, setKcal] = React.useState(String(initialKcal || ''));
+  const heading = title || (isNew ? 'Neues Ziel' : 'Ziel bearbeiten');
+  const save = () => onSave(text, withKcal ? (parseInt(kcal, 10) || 0) : undefined);
   return (
     <div onClick={onCancel} style={{
       position: 'fixed', inset: 0, zIndex: 20001,
@@ -321,28 +335,43 @@ function ItemEditor({ initialText, isNew, onSave, onCancel }) {
         borderRadius: 22, padding: 20, fontFamily: FONT_BODY,
       }}>
         <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, color: JOUR_COLORS.ink, marginBottom: 14 }}>
-          {isNew ? 'Neues Ziel' : 'Ziel bearbeiten'}
+          {heading}
         </div>
         <input
           autoFocus
           value={text}
           onChange={e => setText(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') onSave(text); }}
-          placeholder="z.B. 10.000 Schritte"
+          onKeyDown={e => { if (e.key === 'Enter') save(); }}
+          placeholder={placeholder}
           style={{
             width: '100%', padding: '14px 16px', borderRadius: 14,
             border: `1.5px solid ${JOUR_COLORS.line}`, background: JOUR_COLORS.card,
             fontSize: 15, fontFamily: FONT_BODY, outline: 'none', color: JOUR_COLORS.ink,
-            marginBottom: 16, boxSizing: 'border-box',
+            marginBottom: withKcal ? 10 : 16, boxSizing: 'border-box',
           }}
         />
+        {withKcal && (
+          <input
+            value={kcal}
+            onChange={e => setKcal(e.target.value.replace(/\D/g, ''))}
+            onKeyDown={e => { if (e.key === 'Enter') save(); }}
+            placeholder="Kalorien (kcal)"
+            inputMode="numeric"
+            style={{
+              width: '100%', padding: '14px 16px', borderRadius: 14,
+              border: `1.5px solid ${JOUR_COLORS.line}`, background: JOUR_COLORS.card,
+              fontSize: 15, fontFamily: FONT_BODY, outline: 'none', color: JOUR_COLORS.ink,
+              marginBottom: 16, boxSizing: 'border-box',
+            }}
+          />
+        )}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onCancel} style={{
             flex: 1, padding: '14px 0', borderRadius: 14, border: `1px solid ${JOUR_COLORS.line}`,
             background: 'transparent', color: JOUR_COLORS.ink, fontSize: 15, cursor: 'pointer',
             fontFamily: FONT_BODY,
           }}>Abbrechen</button>
-          <button onClick={() => onSave(text)} style={{
+          <button onClick={save} style={{
             flex: 1, padding: '14px 0', borderRadius: 14, border: 'none',
             background: JOUR_COLORS.ink, color: '#fff', fontSize: 15, fontWeight: 500,
             cursor: 'pointer', fontFamily: FONT_BODY,
@@ -372,21 +401,15 @@ function TapMetric({ label, value, accent, onClick }) {
   );
 }
 
-function TapChecklistRow({ label, done, isLast, onClick, onPressStart, onPressEnd }) {
+function TapChecklistRow({ label, done, isLast, onClick }) {
   return (
-    <button
-      onClick={onClick}
-      onPointerDown={onPressStart}
-      onPointerUp={onPressEnd}
-      onPointerLeave={onPressEnd}
-      onContextMenu={e => e.preventDefault()}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '14px 16px', width: '100%',
-        background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-        borderBottom: isLast ? 'none' : `1px solid ${JOUR_COLORS.line}`,
-        fontFamily: FONT_BODY, userSelect: 'none', WebkitUserSelect: 'none',
-      }}>
+    <button onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '14px 16px', width: '100%',
+      background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+      borderBottom: isLast ? 'none' : `1px solid ${JOUR_COLORS.line}`,
+      fontFamily: FONT_BODY,
+    }}>
       <Check on={done} />
       <div style={{
         flex: 1, fontSize: 15,
@@ -398,20 +421,40 @@ function TapChecklistRow({ label, done, isLast, onClick, onPressStart, onPressEn
 }
 
 function InteractiveMeal({ state, setState }) {
-  const foods = [
-    { name: 'Avocado-Toast', kcal: 320, tag: 'Frühstück', color: JOUR_COLORS.accentSoft },
-    { name: '3-Eier-Omelett', kcal: 290, tag: 'Protein', color: JOUR_COLORS.coralSoft },
-    { name: 'Quinoa-Salat', kcal: 420, tag: 'Mittagessen', color: JOUR_COLORS.lilacSoft },
-    { name: 'Hähnchen + Reis', kcal: 560, tag: 'Mittagessen', color: JOUR_COLORS.accentSoft },
-    { name: 'Joghurt + Früchte', kcal: 180, tag: 'Snack', color: JOUR_COLORS.coralSoft },
-  ];
+  const [editing, setEditing] = React.useState(false);
+  const [editorState, setEditorState] = React.useState(null); // { index: null|number, text, kcal }
+  const foods = state.foods;
+
   const toggle = (i) => {
     const sel = state.selectedMeals.includes(i)
       ? state.selectedMeals.filter(x => x !== i)
       : [...state.selectedMeals, i];
     setState({ ...state, selectedMeals: sel });
   };
-  const totalKcal = state.selectedMeals.reduce((a, i) => a + foods[i].kcal, 0);
+  const totalKcal = state.selectedMeals.reduce((a, i) => a + (foods[i]?.kcal || 0), 0);
+
+  const colorKeys = ['accentSoft', 'coralSoft', 'lilacSoft'];
+  const openAdd = () => setEditorState({ index: null, text: '', kcal: '' });
+  const openEdit = (i) => setEditorState({ index: i, text: foods[i].name, kcal: foods[i].kcal });
+  const deleteItem = (i) => {
+    setState({
+      ...state,
+      foods: foods.filter((_, j) => j !== i),
+      selectedMeals: state.selectedMeals.filter(x => x !== i).map(x => x > i ? x - 1 : x),
+    });
+  };
+  const saveEditor = (rawText, kcal, index) => {
+    const name = rawText.trim();
+    setEditorState(null);
+    if (!name) return;
+    if (index === null) {
+      const color = colorKeys[foods.length % colorKeys.length];
+      setState({ ...state, foods: [...foods, { name, kcal: kcal || 0, tag: 'Eigenes', color }] });
+    } else {
+      const list = foods.map((f, j) => j === index ? { ...f, name, kcal: kcal || 0 } : f);
+      setState({ ...state, foods: list });
+    }
+  };
 
   return (
     <div style={{ background: JOUR_COLORS.paper, minHeight: '100%', paddingBottom: 120 }}>
@@ -427,33 +470,44 @@ function InteractiveMeal({ state, setState }) {
         )}
       </div>
       <div style={{ padding: '0 22px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+          <EditButton active={editing} onClick={() => setEditing(e => !e)} />
+        </div>
         <Card pad={0}>
           {foods.map((f, i) => {
             const isOn = state.selectedMeals.includes(i);
             return (
-              <button key={i} onClick={() => toggle(i)} style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '14px 16px', width: '100%',
-                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-                borderBottom: i === foods.length - 1 ? 'none' : `1px solid ${JOUR_COLORS.line}`,
-                fontFamily: FONT_BODY,
-              }}>
-                <div style={{
-                  width: 38, height: 38, borderRadius: 12, background: f.color,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: FONT_DISPLAY, fontSize: 18, color: JOUR_COLORS.ink,
-                }}>{f.name.charAt(0)}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, color: JOUR_COLORS.ink }}>{f.name}</div>
-                  <div style={{ fontSize: 12, color: JOUR_COLORS.sub, marginTop: 2 }}>
-                    {f.kcal} kcal · {f.tag}
+              <EditableRow key={i} editing={editing} isLast={i === foods.length - 1}
+                onEdit={() => openEdit(i)} onDelete={() => deleteItem(i)}>
+                <button onClick={() => toggle(i)} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '14px 16px', width: '100%',
+                  background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                  fontFamily: FONT_BODY,
+                }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: 12, background: JOUR_COLORS[f.color] || f.color,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: FONT_DISPLAY, fontSize: 18, color: JOUR_COLORS.ink,
+                  }}>{f.name.charAt(0)}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, color: JOUR_COLORS.ink }}>{f.name}</div>
+                    <div style={{ fontSize: 12, color: JOUR_COLORS.sub, marginTop: 2 }}>
+                      {f.kcal} kcal · {f.tag}
+                    </div>
                   </div>
-                </div>
-                <Check on={isOn} color={JOUR_COLORS.coral} />
-              </button>
+                  {!editing && <Check on={isOn} color={JOUR_COLORS.coral} />}
+                </button>
+              </EditableRow>
             );
           })}
+          {foods.length === 0 && (
+            <div style={{ padding: '18px 16px', fontSize: 13, color: JOUR_COLORS.sub, fontFamily: FONT_BODY }}>
+              Noch keine Speisen. Füge eine hinzu.
+            </div>
+          )}
         </Card>
+        {editing && <AddButton onClick={openAdd} />}
 
         <div style={{ marginTop: 14 }}>
           <SectionLabel>Schnelle Notiz</SectionLabel>
@@ -472,6 +526,19 @@ function InteractiveMeal({ state, setState }) {
           </Card>
         </div>
       </div>
+
+      {editorState && (
+        <ItemEditor
+          initialText={editorState.text}
+          initialKcal={editorState.kcal}
+          withKcal
+          isNew={editorState.index === null}
+          title={editorState.index === null ? 'Neue Speise' : 'Speise bearbeiten'}
+          placeholder="z.B. Haferflocken"
+          onSave={(text, kcal) => saveEditor(text, kcal, editorState.index)}
+          onCancel={() => setEditorState(null)}
+        />
+      )}
     </div>
   );
 }
@@ -483,11 +550,29 @@ function InteractiveSport({ state, setState }) {
   const [exIdx, setExIdx] = React.useState(0);
   const [reps, setReps] = React.useState(10);
   const [weight, setWeight] = React.useState(60);
+  const [editing, setEditing] = React.useState(false);
+  const [editorState, setEditorState] = React.useState(null); // { index: null|number, text }
 
-  const exercises = [
-    'Bankdrücken', 'Kniebeugen', 'Kreuzheben', 
-    'Schulterdrücken', 'Klimmzüge', 'Rudern'
-  ];
+  const exercises = state.exercises;
+
+  const openAdd = () => setEditorState({ index: null, text: '' });
+  const openEdit = (i) => setEditorState({ index: i, text: exercises[i] });
+  const deleteItem = (i) => {
+    const list = exercises.filter((_, j) => j !== i);
+    setState({ ...state, exercises: list });
+    if (exIdx >= list.length) setExIdx(Math.max(0, list.length - 1));
+  };
+  const saveEditor = (rawText, _kcal, index) => {
+    const text = rawText.trim();
+    setEditorState(null);
+    if (!text) return;
+    if (index === null) {
+      setState({ ...state, exercises: [...exercises, text] });
+    } else {
+      const list = exercises.map((e, j) => j === index ? text : e);
+      setState({ ...state, exercises: list });
+    }
+  };
 
   React.useEffect(() => {
     if (!running) return;
@@ -500,10 +585,11 @@ function InteractiveSport({ state, setState }) {
   const kcal = Math.round(sec * 0.15);
 
   const logSet = () => {
-    const newLog = { 
-      ex: exercises[exIdx], 
+    if (exercises.length === 0) return;
+    const newLog = {
+      ex: exercises[exIdx],
       set: sessionLogs.filter(l => l.ex === exercises[exIdx]).length + 1,
-      reps, 
+      reps,
       weight,
       time: `${mm}:${ss}`
     };
@@ -539,41 +625,75 @@ function InteractiveSport({ state, setState }) {
         </Card>
 
         <SectionLabel>Aktuelle Übung</SectionLabel>
-        <Card pad={18} style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <button onClick={() => setExIdx((exIdx - 1 + exercises.length) % exercises.length)} style={{ background: JOUR_COLORS.line, border: 'none', padding: 8, borderRadius: 10, cursor: 'pointer' }}>←</button>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: FONT_DISPLAY, fontSize: 20, color: JOUR_COLORS.ink }}>{exercises[exIdx]}</div>
-              <div style={{ fontFamily: FONT_BODY, fontSize: 12, color: JOUR_COLORS.sub }}>Übung {exIdx + 1} von {exercises.length}</div>
+        {exercises.length > 0 ? (
+          <Card pad={18} style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <button onClick={() => setExIdx((exIdx - 1 + exercises.length) % exercises.length)} style={{ background: JOUR_COLORS.line, border: 'none', padding: 8, borderRadius: 10, cursor: 'pointer' }}>←</button>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: FONT_DISPLAY, fontSize: 20, color: JOUR_COLORS.ink }}>{exercises[exIdx]}</div>
+                <div style={{ fontFamily: FONT_BODY, fontSize: 12, color: JOUR_COLORS.sub }}>Übung {exIdx + 1} von {exercises.length}</div>
+              </div>
+              <button onClick={() => setExIdx((exIdx + 1) % exercises.length)} style={{ background: JOUR_COLORS.line, border: 'none', padding: 8, borderRadius: 10, cursor: 'pointer' }}>→</button>
             </div>
-            <button onClick={() => setExIdx((exIdx + 1) % exercises.length)} style={{ background: JOUR_COLORS.line, border: 'none', padding: 8, borderRadius: 10, cursor: 'pointer' }}>→</button>
-          </div>
 
-          <div style={{ display: 'flex', gap: 12, marginBottom: 18 }}>
-            <div style={{ flex: 1, background: JOUR_COLORS.card, padding: 12, borderRadius: 16, border: `1px solid ${JOUR_COLORS.line}`, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, color: JOUR_COLORS.sub, textTransform: 'uppercase', marginBottom: 4 }}>Wdh.</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                <button onClick={() => setReps(r => Math.max(1, r-1))} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>-</button>
-                <div style={{ fontSize: 22, fontFamily: FONT_DISPLAY, color: JOUR_COLORS.ink }}>{reps}</div>
-                <button onClick={() => setReps(r => r+1)} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>+</button>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 18 }}>
+              <div style={{ flex: 1, background: JOUR_COLORS.card, padding: 12, borderRadius: 16, border: `1px solid ${JOUR_COLORS.line}`, textAlign: 'center' }}>
+                <div style={{ fontSize: 10, color: JOUR_COLORS.sub, textTransform: 'uppercase', marginBottom: 4 }}>Wdh.</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  <button onClick={() => setReps(r => Math.max(1, r-1))} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>-</button>
+                  <div style={{ fontSize: 22, fontFamily: FONT_DISPLAY, color: JOUR_COLORS.ink }}>{reps}</div>
+                  <button onClick={() => setReps(r => r+1)} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>+</button>
+                </div>
+              </div>
+              <div style={{ flex: 1, background: JOUR_COLORS.card, padding: 12, borderRadius: 16, border: `1px solid ${JOUR_COLORS.line}`, textAlign: 'center' }}>
+                <div style={{ fontSize: 10, color: JOUR_COLORS.sub, textTransform: 'uppercase', marginBottom: 4 }}>Gewicht (kg)</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  <button onClick={() => setWeight(w => Math.max(0, w-2.5))} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>-</button>
+                  <div style={{ fontSize: 22, fontFamily: FONT_DISPLAY, color: JOUR_COLORS.ink }}>{weight}</div>
+                  <button onClick={() => setWeight(w => w+2.5)} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>+</button>
+                </div>
               </div>
             </div>
-            <div style={{ flex: 1, background: JOUR_COLORS.card, padding: 12, borderRadius: 16, border: `1px solid ${JOUR_COLORS.line}`, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, color: JOUR_COLORS.sub, textTransform: 'uppercase', marginBottom: 4 }}>Gewicht (kg)</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                <button onClick={() => setWeight(w => Math.max(0, w-2.5))} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>-</button>
-                <div style={{ fontSize: 22, fontFamily: FONT_DISPLAY, color: JOUR_COLORS.ink }}>{weight}</div>
-                <button onClick={() => setWeight(w => w+2.5)} style={{ fontSize: 20, background: 'none', border: 'none', color: JOUR_COLORS.sub }}>+</button>
-              </div>
-            </div>
-          </div>
 
-          <button onClick={logSet} style={{
-            width: '100%', padding: '14px 0', borderRadius: 14, border: 'none',
-            background: JOUR_COLORS.ink, color: '#fff', fontFamily: FONT_BODY,
-            fontSize: 15, fontWeight: 500, cursor: 'pointer'
-          }}>Satz Loggen</button>
+            <button onClick={logSet} style={{
+              width: '100%', padding: '14px 0', borderRadius: 14, border: 'none',
+              background: JOUR_COLORS.ink, color: '#fff', fontFamily: FONT_BODY,
+              fontSize: 15, fontWeight: 500, cursor: 'pointer'
+            }}>Satz Loggen</button>
+          </Card>
+        ) : (
+          <Card pad={18} style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: JOUR_COLORS.sub, fontFamily: FONT_BODY, textAlign: 'center' }}>
+              Noch keine Übungen. Füge eine unten hinzu.
+            </div>
+          </Card>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <SectionLabel>Übungen verwalten</SectionLabel>
+          <EditButton active={editing} onClick={() => setEditing(e => !e)} />
+        </div>
+        <Card pad={0} style={{ marginBottom: 16 }}>
+          {exercises.map((name, i) => (
+            <EditableRow key={i} editing={editing} isLast={i === exercises.length - 1}
+              onEdit={() => openEdit(i)} onDelete={() => deleteItem(i)}>
+              <button onClick={() => setExIdx(i)} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '14px 16px', width: '100%',
+                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                fontFamily: FONT_BODY,
+              }}>
+                <div style={{ flex: 1, fontSize: 15, color: i === exIdx ? JOUR_COLORS.ink : JOUR_COLORS.sub }}>{name}</div>
+              </button>
+            </EditableRow>
+          ))}
+          {exercises.length === 0 && (
+            <div style={{ padding: '18px 16px', fontSize: 13, color: JOUR_COLORS.sub, fontFamily: FONT_BODY }}>
+              Noch keine Übungen.
+            </div>
+          )}
         </Card>
+        {editing && <AddButton onClick={openAdd} />}
 
         {sessionLogs.length > 0 && (
           <>
@@ -594,6 +714,17 @@ function InteractiveSport({ state, setState }) {
           </>
         )}
       </div>
+
+      {editorState && (
+        <ItemEditor
+          initialText={editorState.text}
+          isNew={editorState.index === null}
+          title={editorState.index === null ? 'Neue Übung' : 'Übung bearbeiten'}
+          placeholder="z.B. Beinpresse"
+          onSave={(text) => saveEditor(text, undefined, editorState.index)}
+          onCancel={() => setEditorState(null)}
+        />
+      )}
     </div>
   );
 }
